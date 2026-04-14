@@ -1,0 +1,5 @@
+node_modules/
+.env
+friends-alias.json
+friends-cache.json
+auth-data.json
