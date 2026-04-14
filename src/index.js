@@ -1,4 +1,24 @@
-import "dotenv/config";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { readFileSync } from "fs";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const envPath = join(__dirname, "..", ".env");
+try {
+  const envContent = readFileSync(envPath, "utf-8");
+  for (const line of envContent.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const value = trimmed.slice(eqIndex + 1).trim().replace(/^["']|["']$/g, "");
+    if (!process.env[key]) process.env[key] = value;
+  }
+} catch {
+  // .env not found, rely on system environment variables
+}
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -292,12 +312,13 @@ server.tool(
 // フレンドを検索（表記揺れ対応）
 server.tool(
   "search_friend",
-  "フレンドを名前で検索します。ニックネームや通称、表記揺れにも対応しています。見つからない場合はAIが推測します。例: 「ペンペン」で「penpengué」を検索できます。",
+  "フレンドを名前で検索します。ニックネームや通称、表記揺れにも対応しています。見つからない場合はAIが推測し、結果を自動で別名登録します。推測が間違っていた場合は forceReInfer: true で再推論できます。",
   {
     query: z.string().describe("検索クエリ（名前、ニックネーム、通称など）"),
     useAI: z.boolean().optional().describe("見つからない場合にAIで推測するか（デフォルト: true）"),
+    forceReInfer: z.boolean().optional().describe("前回のAI推測が間違っていた場合にtrueを指定すると、自動登録された別名を削除して再推論します"),
   },
-  async ({ query, useAI = true }) => {
+  async ({ query, useAI = true, forceReInfer = false }) => {
     try {
       const api = getVRChatAPI();
       await api.ensureLoggedIn();
@@ -309,6 +330,11 @@ server.tool(
       if (needsUpdate || friendIndex.getCount() === 0) {
         const allFriends = await api.getAllFriends();
         friendIndex.updateFriends(allFriends);
+      }
+
+      // forceReInfer: 自動登録された別名を消してAI再推論に回す
+      if (forceReInfer) {
+        friendIndex.removeAutoAlias(query);
       }
 
       // 検索実行
@@ -332,9 +358,13 @@ server.tool(
             }
 
             if (currentFriend) {
+              // AI推測結果を自動で別名登録
+              friendIndex.addAlias(query, currentFriend.id, { auto: true });
+
               const statusEmoji = getStatusEmoji(currentFriend.status);
               let resultText = `## 「${query}」の検索結果 (AI推測)\n\n`;
-              resultText += `🤖 **AIによる推測** (確信度: ${Math.round((aiGuess.confidence || 0.5) * 100)}%)\n\n`;
+              resultText += `🤖 **AIによる推測** (確信度: ${Math.round((aiGuess.confidence || 0.5) * 100)}%)\n`;
+              resultText += `📝 この結果は自動で別名登録されました。間違っている場合は \`search_friend("${query}", forceReInfer: true)\` で再推論できます。\n\n`;
 
               resultText += `### ${statusEmoji} ${currentFriend.displayName}\n`;
               resultText += `- **ID**: ${currentFriend.id}\n`;
@@ -356,8 +386,6 @@ server.tool(
                   resultText += `- **場所**: ${currentFriend.location}\n`;
                 }
               }
-
-              resultText += `\n💡 この推測が正しければ、\`add_friend_alias\`で「${query}」を別名として登録すると次回から直接検索できます。`;
 
               return {
                 content: [

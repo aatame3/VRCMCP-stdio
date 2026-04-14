@@ -9,7 +9,7 @@ const CACHE_FILE = join(__dirname, "..", "friends-cache.json");
 export class FriendIndex {
   constructor() {
     this.friends = new Map(); // userId -> friendData
-    this.aliases = new Map(); // alias -> userId
+    this.aliases = new Map(); // alias -> { userId, auto }
     this.lastUpdate = null;
     this.loadAliases();
     this.loadCache();
@@ -20,7 +20,14 @@ export class FriendIndex {
     try {
       if (existsSync(ALIAS_FILE)) {
         const data = JSON.parse(readFileSync(ALIAS_FILE, "utf-8"));
-        this.aliases = new Map(Object.entries(data));
+        for (const [alias, value] of Object.entries(data)) {
+          // Support legacy format (alias -> userId string) and new format (alias -> { userId, auto })
+          if (typeof value === "string") {
+            this.aliases.set(alias, { userId: value, auto: false });
+          } else {
+            this.aliases.set(alias, value);
+          }
+        }
       }
     } catch (e) {
       console.error("Failed to load aliases:", e.message);
@@ -82,9 +89,9 @@ export class FriendIndex {
   }
 
   // 別名を追加
-  addAlias(alias, userId) {
+  addAlias(alias, userId, { auto = false } = {}) {
     const normalizedAlias = this.normalize(alias);
-    this.aliases.set(normalizedAlias, userId);
+    this.aliases.set(normalizedAlias, { userId, auto });
     this.saveAliases();
   }
 
@@ -98,11 +105,23 @@ export class FriendIndex {
     return deleted;
   }
 
+  // クエリに紐づく自動登録別名を削除
+  removeAutoAlias(alias) {
+    const normalizedAlias = this.normalize(alias);
+    const entry = this.aliases.get(normalizedAlias);
+    if (entry && entry.auto) {
+      this.aliases.delete(normalizedAlias);
+      this.saveAliases();
+      return true;
+    }
+    return false;
+  }
+
   // ユーザーの別名一覧を取得
   getAliasesForUser(userId) {
     const result = [];
-    for (const [alias, id] of this.aliases) {
-      if (id === userId) {
+    for (const [alias, entry] of this.aliases) {
+      if (entry.userId === userId) {
         result.push(alias);
       }
     }
@@ -183,21 +202,21 @@ export class FriendIndex {
     
     // 1. 別名から完全一致を探す
     if (this.aliases.has(normalizedQuery)) {
-      const userId = this.aliases.get(normalizedQuery);
-      const friend = this.friends.get(userId);
+      const entry = this.aliases.get(normalizedQuery);
+      const friend = this.friends.get(entry.userId);
       if (friend) {
-        results.push({ ...friend, matchType: "alias", score: 1.0 });
+        results.push({ ...friend, matchType: "alias", autoAlias: entry.auto, score: 1.0 });
         return results; // 別名完全一致なら即返す
       }
     }
-    
+
     // 2. 別名から部分一致・類似検索
-    for (const [alias, userId] of this.aliases) {
+    for (const [alias, entry] of this.aliases) {
       const score = this.similarity(query, alias);
       if (score >= threshold) {
-        const friend = this.friends.get(userId);
-        if (friend && !results.find(r => r.id === userId)) {
-          results.push({ ...friend, matchType: "alias", matchedAlias: alias, score });
+        const friend = this.friends.get(entry.userId);
+        if (friend && !results.find(r => r.id === entry.userId)) {
+          results.push({ ...friend, matchType: "alias", matchedAlias: alias, autoAlias: entry.auto, score });
         }
       }
     }
