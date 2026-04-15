@@ -1,5 +1,11 @@
 import * as https from "https";
 import * as crypto from "crypto";
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const AUTH_FILE = join(__dirname, "..", "auth-data.json");
 
 const API_BASE = "https://api.vrchat.cloud/api/1";
 const USER_AGENT = "VRCMCP/1.0.0";
@@ -15,6 +21,31 @@ export class VRChatAPI {
     this.twoFactorCookie = null;
     this.currentUser = null;
     this.isLoggedIn = false;
+    this.loadCookies();
+  }
+
+  loadCookies() {
+    try {
+      if (existsSync(AUTH_FILE)) {
+        const data = JSON.parse(readFileSync(AUTH_FILE, "utf-8"));
+        this.authCookie = data.authCookie || null;
+        this.twoFactorCookie = data.twoFactorCookie || null;
+      }
+    } catch (e) {
+      console.error("Failed to load auth cookies:", e.message);
+    }
+  }
+
+  saveCookies() {
+    try {
+      writeFileSync(AUTH_FILE, JSON.stringify({
+        authCookie: this.authCookie,
+        twoFactorCookie: this.twoFactorCookie,
+        savedAt: new Date().toISOString(),
+      }, null, 2), "utf-8");
+    } catch (e) {
+      console.error("Failed to save auth cookies:", e.message);
+    }
   }
 
   async request(method, path, body = null, additionalHeaders = {}) {
@@ -166,6 +197,7 @@ export class VRChatAPI {
           const userResult = await this.request("GET", "/auth/user");
           this.currentUser = userResult;
           this.isLoggedIn = true;
+          this.saveCookies();
           return userResult;
         } else {
           throw new Error(`Unsupported 2FA type: ${twoFactorTypes.join(", ")}`);
@@ -174,6 +206,7 @@ export class VRChatAPI {
 
       this.currentUser = result;
       this.isLoggedIn = true;
+      this.saveCookies();
       return result;
     } catch (error) {
       this.isLoggedIn = false;
@@ -182,9 +215,23 @@ export class VRChatAPI {
   }
 
   async ensureLoggedIn() {
-    if (!this.isLoggedIn) {
-      await this.login();
+    if (this.isLoggedIn) return;
+
+    // 保存済み Cookie があれば有効性を確認
+    if (this.authCookie) {
+      try {
+        const result = await this.request("GET", "/auth/user");
+        if (result && result.id) {
+          this.currentUser = result;
+          this.isLoggedIn = true;
+          return;
+        }
+      } catch {
+        // Cookie 無効 → 通常ログインへ
+      }
     }
+
+    await this.login();
   }
 
   async getFavoriteFriends() {
