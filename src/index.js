@@ -58,13 +58,12 @@ function getVRChatAPI() {
   if (!vrchatApi) {
     const username = process.env.VRCHAT_USERNAME;
     const password = process.env.VRCHAT_PASSWORD;
-    const totp = process.env.VRCHAT_TOTP_SECRET;
 
     if (!username || !password) {
       throw new Error("VRCHAT_USERNAME and VRCHAT_PASSWORD environment variables are required");
     }
 
-    vrchatApi = new VRChatAPI(username, password, totp);
+    vrchatApi = new VRChatAPI(username, password);
   }
   return vrchatApi;
 }

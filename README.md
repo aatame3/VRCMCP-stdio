@@ -38,10 +38,6 @@ cp .env.example .env
 VRCHAT_USERNAME=your_vrchat_username
 VRCHAT_PASSWORD=your_vrchat_password
 
-# オプション: TOTP シークレットを設定すると 2FA を完全自動化できます
-# （未設定でも初回ログイン後はセッションが自動復元されます）
-VRCHAT_TOTP_SECRET=your_totp_secret
-
 # オプション: AI 推測検索を有効にします
 GEMINI_API_KEY=your_gemini_api_key
 ```

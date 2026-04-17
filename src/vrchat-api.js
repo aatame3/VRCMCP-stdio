@@ -1,5 +1,4 @@
 import * as https from "https";
-import * as crypto from "crypto";
 import { readFileSync, unlinkSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -17,10 +16,9 @@ const USER_AGENT = "VRCMCP/1.0.0";
 const API_KEY = "JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26";
 
 export class VRChatAPI {
-  constructor(username, password, totpSecret = null) {
+  constructor(username, password) {
     this.username = username;
     this.password = password;
-    this.totpSecret = totpSecret;
     this.authCookie = null;
     this.twoFactorCookie = null;
     this.currentUser = null;
@@ -151,41 +149,6 @@ export class VRChatAPI {
     });
   }
 
-  generateTOTP(secret) {
-    // Base32デコード
-    const base32Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    const cleanSecret = secret.replace(/\s/g, "").toUpperCase();
-    let bits = "";
-    for (const char of cleanSecret) {
-      const val = base32Chars.indexOf(char);
-      if (val === -1) continue;
-      bits += val.toString(2).padStart(5, "0");
-    }
-    const bytes = [];
-    for (let i = 0; i + 8 <= bits.length; i += 8) {
-      bytes.push(parseInt(bits.substr(i, 8), 2));
-    }
-    const key = Buffer.from(bytes);
-
-    // TOTP生成
-    const time = Math.floor(Date.now() / 1000 / 30);
-    const timeBuffer = Buffer.alloc(8);
-    timeBuffer.writeBigInt64BE(BigInt(time));
-
-    const hmac = crypto.createHmac("sha1", key);
-    hmac.update(timeBuffer);
-    const hash = hmac.digest();
-
-    const offset = hash[hash.length - 1] & 0x0f;
-    const code =
-      ((hash[offset] & 0x7f) << 24) |
-      ((hash[offset + 1] & 0xff) << 16) |
-      ((hash[offset + 2] & 0xff) << 8) |
-      (hash[offset + 3] & 0xff);
-
-    return (code % 1000000).toString().padStart(6, "0");
-  }
-
   async login(totpCode = null) {
     // Basic認証でログイン
     const authString = Buffer.from(`${this.username}:${this.password}`).toString("base64");
@@ -200,16 +163,10 @@ export class VRChatAPI {
         const twoFactorTypes = result.requiresTwoFactorAuth;
         
         if (twoFactorTypes.includes("totp") || twoFactorTypes.includes("otp")) {
-          let code = totpCode;
-          
-          // TOTPシークレットがある場合は自動生成
-          if (!code && this.totpSecret) {
-            code = this.generateTOTP(this.totpSecret);
+          if (!totpCode) {
+            throw new Error("2FA code required. Please provide totpCode parameter.");
           }
-          
-          if (!code) {
-            throw new Error("2FA code required. Please provide totpCode parameter or set VRCHAT_TOTP_SECRET environment variable.");
-          }
+          const code = totpCode;
 
           // 2FA認証
           const twoFactorPath = twoFactorTypes.includes("totp") ? "/auth/twofactorauth/totp/verify" : "/auth/twofactorauth/otp/verify";
