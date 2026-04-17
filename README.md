@@ -144,4 +144,8 @@ JSON ファイルはサーバー起動時に自動生成されます。`.gitigno
 
 ## ライセンス
 
-MIT
+[GNU General Public License v3.0](LICENSE) (GPL-3.0)
+
+Copyright (c) 2026 aatame3
+
+本ソフトウェアを改変・再配布する場合は、同じ GPL-3.0 のもとでソースコードを公開する必要があります。詳細は `LICENSE` を参照してください。
