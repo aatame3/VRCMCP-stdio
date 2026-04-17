@@ -10,12 +10,13 @@ Claude などの AI アシスタントから、フレンドのオンライン状
 - ニックネーム・通称での曖昧検索（表記揺れ対応）
 - Gemini AI による検索クエリの推測（オプション）
 - 別名（ニックネーム）の登録・削除
-- ログインセッションの自動復元（Cookie 永続化）
+- ログインセッションの自動復元（Cookie を OS キーリングに安全に保存）
 
 ## 必要なもの
 
 - Node.js 18 以上
 - VRChat アカウント
+- OS キーリング（macOS Keychain / Windows Credential Manager / Linux は libsecret）
 - （オプション）Gemini API キー
 
 ## セットアップ
@@ -79,7 +80,9 @@ claude mcp add vrcmcp --scope user node /absolute/path/to/VRCMCP-stdio/src/index
 vrchat_login(totpCode: "123456")
 ```
 
-ログイン成功後は Cookie が `auth-data.json` に保存され、**次回以降は自動でセッションが復元**されます。
+ログイン成功後、セッション Cookie は **OS のキーリング**（macOS Keychain など）に安全に保存され、**次回以降は自動でセッションが復元**されます。
+
+旧バージョンで作成された `auth-data.json` がある場合は、初回起動時に自動でキーリングに移行され、ファイルは削除されます。
 
 ## 提供ツール一覧
 
@@ -110,15 +113,15 @@ vrchat_login(totpCode: "123456")
 「れいずちゃんどこにいる？」
 ```
 
-## データファイル
+## データの保存場所
 
-| ファイル | 内容 |
+| 保存先 | 内容 |
 |---|---|
-| `auth-data.json` | ログインセッションの Cookie（永続） |
+| OS キーリング（サービス名 `vrcmcp`） | ログインセッションの Cookie |
 | `friends-alias.json` | 登録した別名データ（永続） |
 | `friends-cache.json` | フレンドリストのキャッシュ（5 分 TTL） |
 
-これらのファイルはサーバー起動時に自動生成されます。`.gitignore` に追加済みです。
+JSON ファイルはサーバー起動時に自動生成されます。`.gitignore` に追加済みです。
 
 ## ステータスの見方
 

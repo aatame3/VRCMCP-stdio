@@ -1,11 +1,15 @@
 import * as https from "https";
 import * as crypto from "crypto";
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, unlinkSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { Entry } from "@napi-rs/keyring";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const AUTH_FILE = join(__dirname, "..", "auth-data.json");
+const LEGACY_AUTH_FILE = join(__dirname, "..", "auth-data.json");
+
+const KEYRING_SERVICE = "vrcmcp";
+const KEYRING_ACCOUNT = "auth-cookies";
 
 const API_BASE = "https://api.vrchat.cloud/api/1";
 const USER_AGENT = "VRCMCP/1.0.0";
@@ -21,30 +25,48 @@ export class VRChatAPI {
     this.twoFactorCookie = null;
     this.currentUser = null;
     this.isLoggedIn = false;
+    this.keyring = new Entry(KEYRING_SERVICE, KEYRING_ACCOUNT);
+    this.migrateLegacyAuthFile();
     this.loadCookies();
+  }
+
+  migrateLegacyAuthFile() {
+    if (!existsSync(LEGACY_AUTH_FILE)) return;
+    try {
+      const data = JSON.parse(readFileSync(LEGACY_AUTH_FILE, "utf-8"));
+      if (data.authCookie) {
+        this.authCookie = data.authCookie;
+        this.twoFactorCookie = data.twoFactorCookie || null;
+        this.saveCookies();
+      }
+      unlinkSync(LEGACY_AUTH_FILE);
+      console.error("Migrated auth-data.json to OS keyring");
+    } catch (e) {
+      console.error("Failed to migrate auth-data.json:", e.message);
+    }
   }
 
   loadCookies() {
     try {
-      if (existsSync(AUTH_FILE)) {
-        const data = JSON.parse(readFileSync(AUTH_FILE, "utf-8"));
-        this.authCookie = data.authCookie || null;
-        this.twoFactorCookie = data.twoFactorCookie || null;
-      }
+      const stored = this.keyring.getPassword();
+      if (!stored) return;
+      const data = JSON.parse(stored);
+      this.authCookie = data.authCookie || null;
+      this.twoFactorCookie = data.twoFactorCookie || null;
     } catch (e) {
-      console.error("Failed to load auth cookies:", e.message);
+      console.error("Failed to load auth cookies from keyring:", e.message);
     }
   }
 
   saveCookies() {
     try {
-      writeFileSync(AUTH_FILE, JSON.stringify({
+      this.keyring.setPassword(JSON.stringify({
         authCookie: this.authCookie,
         twoFactorCookie: this.twoFactorCookie,
         savedAt: new Date().toISOString(),
-      }, null, 2), "utf-8");
+      }));
     } catch (e) {
-      console.error("Failed to save auth cookies:", e.message);
+      console.error("Failed to save auth cookies to keyring:", e.message);
     }
   }
 
