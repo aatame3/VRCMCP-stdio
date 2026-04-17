@@ -82,6 +82,9 @@ claude mcp add vrcmcp --scope user node /absolute/path/to/VRCMCP-stdio/src/index
 
 ## 初回ログイン
 
+> [!IMPORTANT]
+> 本ツールは VRChat のユーザー名とパスワードを `.env` に平文で保存します。万が一の漏洩に備え、**VRChat アカウント側で必ず二段階認証（2FA）を有効化することを強く推奨します。** 設定方法は [VRChat 公式ヘルプ](https://help.vrchat.com/hc/en-us/articles/4412366524435-Two-Factor-Authentication-2FA-)を参照してください。
+
 初回のみ `vrchat_login` ツールを呼び出す必要があります。  
 2FA が有効な場合は認証アプリの 6 桁コードを渡してください。
 
