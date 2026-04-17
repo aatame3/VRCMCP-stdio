@@ -31,6 +31,27 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
+server.resource(
+  "guide",
+  "vrcmcp://guide",
+  { mimeType: "text/markdown", description: "vrcmcp tool usage guide" },
+  async (uri) => ({
+    contents: [{
+      uri: uri.href,
+      mimeType: "text/markdown",
+      text: `# vrcmcp usage
+
+Auth: cookies persist in auth-data.json. Call tools directly; only use vrchat_login if a tool returns "2FA code required". Ask the user for the 6-digit code — never guess.
+
+Search: search_friend accepts nicknames/typos (fuzzy + optional AI guess). AI hits auto-register as aliases; pass forceReInfer:true to redo if wrong.
+
+IDs: get_friend_details needs userId (usr_...), not displayName. Use search_friend first to find the ID.
+
+Tools: vrchat_login, get_favorite_friends_status, get_online_friends, get_friend_details, search_friend, add_friend_alias, remove_friend_alias, refresh_friend_index.`,
+    }],
+  })
+);
+
 let vrchatApi = null;
 
 function getVRChatAPI() {
@@ -66,7 +87,7 @@ function getStatusEmoji(status) {
 // ログインツール
 server.tool(
   "vrchat_login",
-  "VRChatにログインします。2FAが有効な場合はTOTPコードが必要です。",
+  "VRChatにログインします。通常は不要（Cookieで自動復元）。他ツールが '2FA code required' エラーを返したときだけ呼び、TOTPコードはユーザーに確認すること。",
   {
     totpCode: z.string().optional().describe("2FAのTOTPコード（必要な場合）"),
   },
