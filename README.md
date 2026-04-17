@@ -9,6 +9,7 @@ Claude などの AI アシスタントから、フレンドのオンライン状
 
 - これは **Vibe Coding で作られた個人用ツール**です。動作は **無保証**で、不具合・アカウントへの影響・その他いかなる損害についても作者は責任を負いません。**自己責任**でご利用ください。
 - VRChat API は公式にドキュメント化されておらず、仕様変更・エンドポイント削除などで本ツールが予告なく動かなくなることがあります。
+- 本プロジェクトは VRChat Inc. とは一切関係ありません（非公式・非提携・非承認）。"VRChat" は VRChat Inc. の商標であり、本プロジェクト内の表記は説明目的での使用です。 / This project is not affiliated with, endorsed by, or sponsored by VRChat Inc. "VRChat" is a trademark of VRChat Inc.
 
 ### VRChat API 利用について
 
