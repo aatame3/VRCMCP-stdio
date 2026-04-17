@@ -11,7 +11,7 @@ const KEYRING_SERVICE = "vrcmcp";
 const KEYRING_ACCOUNT = "auth-cookies";
 
 const API_BASE = "https://api.vrchat.cloud/api/1";
-const USER_AGENT = "VRCMCP/1.0.0";
+const USER_AGENT = "VRCMCP/1.0.0 me@aata.me https://github.com/aatame3/VRCMCP-stdio";
 // VRChat公開APIキー
 const API_KEY = "JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26";
 
