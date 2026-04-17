@@ -46,7 +46,7 @@ npm install
 ```bash
 cp .env.example .env
 ```
-> [!IMPORTANT]
+> [!WARNING]
 > 本ツールは VRChat のユーザー名とパスワードを `.env` に平文で保存します。万が一の漏洩に備え、**VRChat アカウント側で必ず二段階認証（2FA）を有効化することを強く推奨します。** 
 
 
@@ -85,6 +85,9 @@ claude mcp add vrcmcp --scope user node /absolute/path/to/VRCMCP-stdio/src/index
 ```
 
 ## 初回ログイン
+
+> [!NOTE]
+> どうせMCPサーバーさえセットアップすればあとは勝手にLLMがよしなにしてくれるので、人間様は読まなくてもいいかもしれません。
 
 初回のみ `vrchat_login` ツールを呼び出す必要があります。  
 2FA が有効な場合は認証アプリの 6 桁コードを渡してください。
