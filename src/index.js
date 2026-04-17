@@ -334,7 +334,7 @@ server.tool(
   "search_friend",
   "フレンドを検索します。必須パラメータは `query`（検索文字列）。ニックネームや通称、表記揺れにも対応。見つからない場合はAIが推測し、自動で別名登録します。推測が間違っていた場合は forceReInfer: true で再推論できます。",
   {
-    query: z.string().describe("検索文字列（名前・ニックネーム・通称）。パラメータ名は必ず `query`。例: { \"query\": \"ぺんぺん\" }"),
+    query: z.string().describe("検索文字列（名前・ニックネーム・通称）。パラメータ名は必ず `query`。例: { \"query\": \"ほげほげ\" }"),
     useAI: z.boolean().optional().describe("見つからない場合にAIで推測するか（デフォルト: true）"),
     forceReInfer: z.boolean().optional().describe("前回のAI推測が間違っていた場合にtrueを指定すると、自動登録された別名を削除して再推論します"),
   },
