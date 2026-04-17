@@ -120,7 +120,7 @@ vrchat_login(totpCode: "123456")
 - 推測が間違っていた場合は `forceReInfer: true` で再推論できます
 
 ```
-# 使用例（Claude に話しかけるイメージ）
+# 使用例 
 「ほげちゃんって今オンライン？」
 「ふがさんどこにいる？」
 ```
@@ -133,7 +133,7 @@ vrchat_login(totpCode: "123456")
 | `friends-alias.json` | 登録した別名データ（永続） |
 | `friends-cache.json` | フレンドリストのキャッシュ（5 分 TTL） |
 
-JSON ファイルはサーバー起動時に自動生成されます。`.gitignore` に追加済みです。
+JSON ファイルはサーバー起動時に自動生成されます。
 
 ## ステータスの見方
 
